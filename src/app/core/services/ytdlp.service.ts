@@ -2,16 +2,18 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map, tap } from 'rxjs';
 import { AudioInfo } from '../models';
+import { environment } from 'src/environments/environment.prod';
 
 @Injectable({
   providedIn: 'root',
 })
-export class DownloaderService {
+export class YtdlpService {
   private readonly http: HttpClient = inject(HttpClient);
+  private readonly endpoint: string = environment.ytdlpServerUrl;
 
   getInfo(videoUrl: string): Observable<AudioInfo> {
     return this.http
-      .get('http://localhost:3000/info', {
+      .get(`${this.endpoint}/info`, {
         params: { videoUrl },
       })
       .pipe(
@@ -27,7 +29,7 @@ export class DownloaderService {
   }
 
   download(videoUrl: string): Observable<ArrayBuffer> {
-    return this.http.get('http://localhost:3000/download', {
+    return this.http.get(`${this.endpoint}/download`, {
       params: { videoUrl },
       // @ts-ignore
       responseType: 'arraybuffer',

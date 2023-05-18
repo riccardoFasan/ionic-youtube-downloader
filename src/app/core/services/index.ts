@@ -1,2 +1,2 @@
-export * from './downloader.service';
+export * from './ytdlp.service';
 export * from './filesystem.service';

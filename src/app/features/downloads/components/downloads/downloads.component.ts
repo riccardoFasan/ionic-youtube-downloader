@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule, ToastController } from '@ionic/angular';
-import { DownloaderService, FilesystemService } from 'src/app/core/services';
+import { YtdlpService, FilesystemService } from 'src/app/core/services';
 import { BehaviorSubject, Observable, defer, forkJoin, switchMap } from 'rxjs';
 import {
   FormControl,
@@ -57,7 +57,7 @@ import { Audio, AudioInfo } from 'src/app/core/models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DownloadsComponent {
-  private readonly downloader: DownloaderService = inject(DownloaderService);
+  private readonly ytdlp: YtdlpService = inject(YtdlpService);
   private readonly filesystem: FilesystemService = inject(FilesystemService);
   private readonly toastController: ToastController = inject(ToastController);
 
@@ -88,10 +88,7 @@ export class DownloadsComponent {
   }
 
   private downloadAudio(url: string): Observable<Audio> {
-    return forkJoin([
-      this.downloader.getInfo(url),
-      this.downloader.download(url),
-    ]).pipe(
+    return forkJoin([this.ytdlp.getInfo(url), this.ytdlp.download(url)]).pipe(
       switchMap(([info, arrayBuffer]: [AudioInfo, ArrayBuffer]) =>
         defer(() => this.filesystem.saveAudio(info, arrayBuffer))
       )
