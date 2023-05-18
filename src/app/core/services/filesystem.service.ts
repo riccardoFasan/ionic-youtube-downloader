@@ -11,8 +11,7 @@ export class FilesystemService {
   private readonly extension: string = 'mp3';
 
   async saveAudio(info: AudioInfo, arrayBuffer: ArrayBuffer): Promise<Audio> {
-    const buffer: Buffer = Buffer.from(arrayBuffer);
-    const data: string = buffer.toString('base64');
+    const data: string = await this.toDataURL(arrayBuffer);
 
     const { uri } = await Filesystem.writeFile({
       path: `${info.title}.${this.extension}`,
@@ -29,6 +28,15 @@ export class FilesystemService {
       filePath: audio.uri,
       contentType: `audio/${this.extension}`,
       openWithDefault: true,
+    });
+  }
+
+  private async toDataURL(arrayBuffer: ArrayBuffer): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+      reader.readAsDataURL(new Blob([arrayBuffer]));
     });
   }
 }
