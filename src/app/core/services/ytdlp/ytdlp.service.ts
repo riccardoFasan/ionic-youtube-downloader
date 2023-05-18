@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, tap } from 'rxjs';
-import { AudioInfo } from '../models';
+import { Observable, map } from 'rxjs';
+import { AudioInfo } from '../../models';
 import { environment } from 'src/environments/environment.prod';
 
 @Injectable({
@@ -17,9 +17,9 @@ export class YtdlpService {
         params: { videoUrl },
       })
       .pipe(
-        tap((info: any) => console.log(info)),
         map((info: any) => ({
           id: info.videoDetails.videoId,
+          url: videoUrl,
           title: info.videoDetails.title,
           channel: info.videoDetails.ownerChannelName,
           duration: parseInt(info.videoDetails.lengthSeconds),
