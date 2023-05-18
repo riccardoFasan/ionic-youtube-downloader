@@ -36,6 +36,7 @@ export class AudioListStoreService
   readonly audios: Signal<Audio[]> = this.selectSignal((state) => state.audios);
 
   readonly download = this.effect<string>(
+    // TODO: send a warning if the url is already downloading and return
     pipe(
       tap((url: string) => this.addDownload({ url })),
       switchMap((url: string) => this.downloadAudio(url)),
