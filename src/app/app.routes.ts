@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 
 export const APP_ROUTES: Routes = [
   {
-    path: 'downlaods',
+    path: 'downloads',
     loadChildren: () =>
       import('./features/downloads/downloads.routes').then(
         (m) => m.DOWNLOADS_ROUTES
@@ -10,7 +10,7 @@ export const APP_ROUTES: Routes = [
   },
   {
     path: '',
-    redirectTo: 'downlaods',
+    redirectTo: 'downloads',
     pathMatch: 'full',
   },
 ];

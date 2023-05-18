@@ -5,8 +5,11 @@ const config: CapacitorConfig = {
   appName: 'downloader',
   webDir: 'www',
   server: {
-    androidScheme: 'https'
-  }
+    androidScheme: 'http',
+    hostname: 'localhost:4200',
+    allowNavigation: ['localhost:4200'],
+    cleartext: true,
+  },
 };
 
 export default config;
