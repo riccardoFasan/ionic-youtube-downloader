@@ -1,4 +1,5 @@
-export interface VideoInfo {
+export interface AudioInfo {
+  id: string;
   title: string;
   channel: string;
   duration: number;

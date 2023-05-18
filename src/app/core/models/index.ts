@@ -1,1 +1,2 @@
-export * from './video-info.model';
+export * from './audio.model';
+export * from './audio-info.model';

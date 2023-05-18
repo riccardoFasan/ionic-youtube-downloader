@@ -1,24 +1,15 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule, ToastController } from '@ionic/angular';
-import { DownloaderService } from 'src/app/core/services';
-import { VideoInfo } from 'src/app/core/models';
-import {
-  BehaviorSubject,
-  Observable,
-  defer,
-  forkJoin,
-  map,
-  switchMap,
-} from 'rxjs';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+import { DownloaderService, FilesystemService } from 'src/app/core/services';
+import { BehaviorSubject, Observable, defer, forkJoin, switchMap } from 'rxjs';
 import {
   FormControl,
   FormGroup,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { FileOpener } from '@capacitor-community/file-opener';
+import { Audio, AudioInfo } from 'src/app/core/models';
 
 @Component({
   selector: 'app-downloads',
@@ -67,6 +58,7 @@ import { FileOpener } from '@capacitor-community/file-opener';
 })
 export class DownloadsComponent {
   private readonly downloader: DownloaderService = inject(DownloaderService);
+  private readonly filesystem: FilesystemService = inject(FilesystemService);
   private readonly toastController: ToastController = inject(ToastController);
 
   protected readonly loading$: BehaviorSubject<boolean> =
@@ -79,65 +71,31 @@ export class DownloadsComponent {
   protected download(): void {
     const url: string = this.form.get('search')?.value;
     this.loading$.next(true);
-    this.downloadFile(url)
-      .pipe(switchMap((file: File) => defer(() => this.saveFile(file))))
-      .subscribe({
-        next: async (fileUri: string) => {
-          this.presentToast(
-            'Video downloaded, converted and saved successfully!',
-            'success'
-          );
-          this.loading$.next(false);
-          try {
-            await FileOpener.open({
-              filePath: fileUri,
-              contentType: 'audio/mp3',
-              openWithDefault: true,
-            });
-          } catch (e) {
-            console.log(e);
-          }
-        },
-        error: () => {
-          this.presentToast('Error retrieving the video.', 'danger');
-          this.loading$.next(false);
-        },
-      });
+    this.downloadAudio(url).subscribe({
+      next: (audio: Audio) => {
+        this.presentToast(
+          'Video downloaded, converted and saved successfully!',
+          'success'
+        );
+        this.filesystem.openAudio(audio);
+        this.loading$.next(false);
+      },
+      error: () => {
+        this.presentToast('Error retrieving the video.', 'danger');
+        this.loading$.next(false);
+      },
+    });
   }
 
-  private downloadFile(url: string): Observable<File> {
+  private downloadAudio(url: string): Observable<Audio> {
     return forkJoin([
       this.downloader.getInfo(url),
       this.downloader.download(url),
     ]).pipe(
-      map(([info, blob]: [VideoInfo, Blob]) => {
-        return new File([blob], `${info.title}.mp3`, {
-          type: 'audio/mp3',
-        });
-      })
+      switchMap(([info, arrayBuffer]: [AudioInfo, ArrayBuffer]) =>
+        defer(() => this.filesystem.saveAudio(info, arrayBuffer))
+      )
     );
-  }
-
-  private async saveFile(file: File): Promise<string> {
-    function toBase64(file: File): Promise<string> {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-      });
-    }
-
-    const { uri } = await Filesystem.writeFile({
-      path: file.name,
-      data: await toBase64(file),
-      directory: Directory.Library,
-      recursive: true,
-    });
-
-    console.log(uri);
-
-    return uri;
   }
 
   private async presentToast(
@@ -148,7 +106,7 @@ export class DownloadsComponent {
       message,
       color,
       duration: 1500,
-      position: 'bottom',
+      position: 'top',
     });
     toast.present();
   }
