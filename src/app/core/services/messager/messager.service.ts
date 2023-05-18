@@ -7,8 +7,11 @@ import { ToastController } from '@ionic/angular';
 export class MessagerService {
   private readonly toastController: ToastController = inject(ToastController);
 
-  async downloadSuccess(title: string): Promise<void> {
-    await this.presentToast(`${title} has been saved.`, 'success');
+  async duplicateWarning(): Promise<void> {
+    await this.presentToast(
+      'This video has already been downloaded or is in progress.',
+      'warning'
+    );
   }
 
   async downloadError(url: string): Promise<void> {
@@ -20,13 +23,13 @@ export class MessagerService {
 
   private async presentToast(
     message: string,
-    color: 'danger' | 'success'
+    color: 'danger' | 'success' | 'warning'
   ): Promise<void> {
     const toast = await this.toastController.create({
       message,
       color,
       duration: 1500,
-      position: 'top',
+      position: 'bottom',
     });
     toast.present();
   }

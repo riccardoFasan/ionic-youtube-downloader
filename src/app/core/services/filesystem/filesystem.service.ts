@@ -10,7 +10,18 @@ export class FilesystemService {
   private readonly targetDirectory: Directory = Directory.Library;
   private readonly extension: string = 'mp3';
 
-  async saveAudio(info: AudioInfo, arrayBuffer: ArrayBuffer): Promise<Audio> {
+  async openAudioFile(audio: Audio): Promise<void> {
+    await FileOpener.open({
+      filePath: audio.uri,
+      contentType: `audio/${this.extension}`,
+      openWithDefault: true,
+    });
+  }
+
+  async saveAudioFile(
+    info: AudioInfo,
+    arrayBuffer: ArrayBuffer
+  ): Promise<Audio> {
     const data: string = await this.toDataURL(arrayBuffer);
 
     const { uri } = await Filesystem.writeFile({
@@ -23,11 +34,10 @@ export class FilesystemService {
     return { ...info, uri };
   }
 
-  async openAudio(audio: Audio): Promise<void> {
-    await FileOpener.open({
-      filePath: audio.uri,
-      contentType: `audio/${this.extension}`,
-      openWithDefault: true,
+  async removeAudioFile(audio: Audio): Promise<void> {
+    await Filesystem.deleteFile({
+      path: audio.uri,
+      directory: this.targetDirectory,
     });
   }
 

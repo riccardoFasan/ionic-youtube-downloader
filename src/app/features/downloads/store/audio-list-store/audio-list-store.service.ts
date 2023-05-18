@@ -13,11 +13,14 @@ import {
   Observable,
   catchError,
   throwError,
+  filter,
 } from 'rxjs';
 import {
   FilesystemService,
   MessagerService,
+  StorageService,
   YtdlpService,
+  AskerService,
 } from 'src/app/core/services';
 import { Audio, AudioInfo, Download } from 'src/app/core/models';
 
@@ -28,7 +31,9 @@ export class AudioListStoreService
 {
   private readonly ytdlp: YtdlpService = inject(YtdlpService);
   private readonly filesystem: FilesystemService = inject(FilesystemService);
+  private readonly storage: StorageService = inject(StorageService);
   private readonly messager: MessagerService = inject(MessagerService);
+  private readonly asker: AskerService = inject(AskerService);
 
   readonly downloads: Signal<Download[]> = this.selectSignal(
     (state) => state.downloads
@@ -36,8 +41,14 @@ export class AudioListStoreService
   readonly audios: Signal<Audio[]> = this.selectSignal((state) => state.audios);
 
   readonly download = this.effect<string>(
-    // TODO: send a warning if the url is already downloading and return
     pipe(
+      filter((url: string) => {
+        const downloading: boolean = this.downloads().some(
+          (d) => d.url === url
+        );
+        if (downloading) this.messager.duplicateWarning();
+        return !downloading;
+      }),
       tap((url: string) => this.addDownload({ url })),
       switchMap((url: string) => this.downloadAudio(url)),
       switchMap(([info, arrayBuffer]: [AudioInfo, ArrayBuffer]) =>
@@ -45,46 +56,95 @@ export class AudioListStoreService
       ),
       tap({
         next: (audio: Audio) => {
-          this.messager.downloadSuccess(audio.title);
-          this.removeDownload(audio.url);
-          // TODO: add to audio
+          this.removeDownload({ url: audio.url });
+          this.addAudio(audio);
         },
         error: (url: string) => {
           this.messager.downloadError(url);
-          this.removeDownload(url);
+          this.removeDownload({ url });
         },
       })
     )
   );
 
-  private readonly addDownload = this.updater<Download>(
-    (state: AudioListState, download: Download) => ({
+  readonly removeAudio = this.effect<Audio>(
+    pipe(
+      switchMap((audio: Audio) =>
+        defer(() => this.asker.shouldRemove()).pipe(
+          filter((shouldRemove: boolean) => shouldRemove),
+          tap(() => {
+            this.updateAudios(this.audios().filter((a) => a.url !== audio.url));
+            this.storage.removeAudio(audio);
+          })
+        )
+      )
+    )
+  );
+
+  private readonly updateAudios = this.updater<Audio[]>(
+    (state: AudioListState, audios: Audio[]) => ({
       ...state,
-      downloads: [...state.downloads, download],
+      audios,
     })
   );
 
-  private readonly removeDownload = this.updater<string>(
-    (state: AudioListState, url: string) => ({
+  private readonly updateDownloads = this.updater<Download[]>(
+    (state: AudioListState, downloads: Download[]) => ({
       ...state,
-      downloads: state.downloads.filter((d) => d.url !== url),
+      downloads,
     })
   );
 
-  private readonly updateDownloadInfo = this.updater<{
-    url: string;
-    info: AudioInfo;
-  }>((state: AudioListState, { url, info }) => ({
-    ...state,
-    downloads: state.downloads.map((d) => (d.url === url ? { ...d, info } : d)),
-  }));
+  private readonly addDownload = this.effect<Download>(
+    pipe(
+      tap((download: Download) =>
+        this.updateDownloads([...this.downloads(), download])
+      )
+    )
+  );
+
+  private readonly removeDownload = this.effect<Download>(
+    pipe(
+      tap((download: Download) =>
+        this.updateDownloads(
+          this.downloads().filter((d) => d.url !== download.url)
+        )
+      )
+    )
+  );
+
+  private readonly setDownloadAudioInfo = this.effect<AudioInfo>(
+    pipe(
+      tap((info: AudioInfo) =>
+        this.updateDownloads(
+          this.downloads().map((d) => (d.url === info.url ? { ...d, info } : d))
+        )
+      )
+    )
+  );
+
+  private readonly getAudios = this.effect<void>(
+    pipe(
+      switchMap(() => defer(() => this.storage.getAudios())),
+      tap((audios: Audio[]) => this.updateAudios(audios))
+    )
+  );
+
+  private readonly addAudio = this.effect<Audio>(
+    pipe(
+      tap((audio: Audio) => {
+        this.updateAudios([...this.audios(), audio]);
+        this.storage.addAudio(audio);
+      })
+    )
+  );
 
   constructor() {
     super(INITIAL_AUDIO_LIST_STATE);
   }
 
   ngrxOnStateInit(): void {
-    // TODO: get audios from filesystem
+    this.getAudios();
   }
 
   private downloadAudio(url: string): Observable<[AudioInfo, ArrayBuffer]> {
@@ -96,14 +156,14 @@ export class AudioListStoreService
   private getInfo(url: string): Observable<AudioInfo> {
     return this.ytdlp
       .getInfo(url)
-      .pipe(tap((info: AudioInfo) => this.updateDownloadInfo({ url, info })));
+      .pipe(tap((info: AudioInfo) => this.setDownloadAudioInfo(info)));
   }
 
   private saveAudio(
     info: AudioInfo,
     arrayBuffer: ArrayBuffer
   ): Observable<Audio> {
-    return defer(() => this.filesystem.saveAudio(info, arrayBuffer)).pipe(
+    return defer(() => this.filesystem.saveAudioFile(info, arrayBuffer)).pipe(
       catchError(() => throwError(() => info.url))
     );
   }

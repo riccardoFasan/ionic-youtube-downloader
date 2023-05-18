@@ -49,5 +49,6 @@ export class SearchComponent {
   protected download(): void {
     const url: string = this.form.value.search;
     this.search.emit(url);
+    this.form.reset();
   }
 }
