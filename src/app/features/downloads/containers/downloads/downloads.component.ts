@@ -31,7 +31,7 @@ import { Download } from 'src/app/core/models';
     </ion-header>
 
     <ion-content class="ion-padding" [fullscreen]="true">
-      <ion-header collapse="condense" class="mb-4">
+      <ion-header collapse="condense">
         <ion-toolbar>
           <ion-title size="large">Downloader</ion-title>
         </ion-toolbar>
