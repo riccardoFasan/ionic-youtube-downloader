@@ -1,21 +1,25 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { VideoInfo } from '../models';
+import { AudioInfo } from '../../models';
+import { environment } from 'src/environments/environment.prod';
 
 @Injectable({
   providedIn: 'root',
 })
-export class DownloaderService {
+export class YtdlpService {
   private readonly http: HttpClient = inject(HttpClient);
+  private readonly endpoint: string = environment.ytdlpServerUrl;
 
-  getInfo(videoUrl: string): Observable<VideoInfo> {
-    return <any>this.http
-      .get('http://localhost:3000/info', {
+  getInfo(videoUrl: string): Observable<AudioInfo> {
+    return this.http
+      .get(`${this.endpoint}/info`, {
         params: { videoUrl },
       })
       .pipe(
         map((info: any) => ({
+          id: info.videoDetails.videoId,
+          url: videoUrl,
           title: info.videoDetails.title,
           channel: info.videoDetails.ownerChannelName,
           duration: parseInt(info.videoDetails.lengthSeconds),
@@ -24,17 +28,15 @@ export class DownloaderService {
       );
   }
 
-  download(videoUrl: string): Observable<Blob> {
-    return this.http
-      .get<ArrayBuffer>('http://localhost:3000/download', {
-        params: { videoUrl },
-        // @ts-ignore
-        responseType: 'arraybuffer',
-        headers: {
-          'Content-Type': 'audio/mp3',
-        },
-      })
-      .pipe(map((buffer: ArrayBuffer) => new Blob([buffer])));
+  download(videoUrl: string): Observable<ArrayBuffer> {
+    return this.http.get(`${this.endpoint}/download`, {
+      params: { videoUrl },
+      // @ts-ignore
+      responseType: 'arraybuffer',
+      headers: {
+        'Content-Type': 'audio/mp3',
+      },
+    });
   }
 
   private chooseThumbnail(

@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { DownloadsComponent } from './components';
+import { DownloadsComponent } from './containers';
 
 export const DOWNLOADS_ROUTES: Routes = [
   {
