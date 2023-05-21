@@ -14,6 +14,7 @@ import {
   SearchComponent,
 } from '../../presentation';
 import { Audio, Download } from 'src/app/core/models';
+import { DownloadsService } from '../../services';
 
 @Component({
   selector: 'app-downloads',
@@ -42,7 +43,7 @@ import { Audio, Download } from 'src/app/core/models';
       <app-search (search)="download($event)"></app-search>
 
       <ion-list>
-        <ion-item-group *ngIf="downloads().length">
+        <ion-item-group *ngIf="hasDownloads()">
           <ion-item-divider>
             <ion-label> Current downloads </ion-label>
           </ion-item-divider>
@@ -51,7 +52,7 @@ import { Audio, Download } from 'src/app/core/models';
             [download]="download"
           ></app-downloading-audio>
         </ion-item-group>
-        <ion-item-group *ngIf="audios().length">
+        <ion-item-group *ngIf="hasAudios()">
           <ion-item-divider>
             <ion-label> Your audios </ion-label>
           </ion-item-divider>
@@ -69,16 +70,20 @@ import { Audio, Download } from 'src/app/core/models';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DownloadsComponent {
-  private readonly store: AudioListStoreService = inject(AudioListStoreService);
+  // private readonly store: AudioListStoreService = inject(AudioListStoreService);
+  private readonly downloader: DownloadsService = inject(DownloadsService);
 
-  protected readonly downloads: Signal<Download[]> = this.store.downloads;
-  protected readonly audios: Signal<Audio[]> = this.store.audios;
+  protected readonly downloads: Signal<Download[]> = this.downloader.downloads;
+  protected readonly audios: Signal<Audio[]> = this.downloader.audios;
+  protected readonly hasDownloads: Signal<boolean> =
+    this.downloader.hasDownloads;
+  protected readonly hasAudios: Signal<boolean> = this.downloader.hasAudios;
 
   protected download(url: string): void {
-    this.store.download(url);
+    this.downloader.download(url);
   }
 
   protected onRemove(audio: Audio): void {
-    this.store.removeAudio(audio);
+    this.downloader.askToRemoveAudio(audio);
   }
 }

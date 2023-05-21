@@ -44,7 +44,7 @@ export class AudioListStoreService
     pipe(
       filter((url: string) => {
         const downloading: boolean = this.downloads().some(
-          (d) => d.url === url
+          (download: Download) => download.url === url
         );
         if (downloading) this.messager.duplicateWarning();
         return !downloading;
@@ -70,10 +70,12 @@ export class AudioListStoreService
   readonly removeAudio = this.effect<Audio>(
     pipe(
       switchMap((audio: Audio) =>
-        defer(() => this.asker.shouldRemove()).pipe(
+        defer(() => this.asker.askToRemoveFile()).pipe(
           filter((shouldRemove: boolean) => shouldRemove),
           tap(() => {
-            this.updateAudios(this.audios().filter((a) => a.url !== audio.url));
+            this.updateAudios(
+              this.audios().filter((audio: Audio) => audio.url !== audio.url)
+            );
             this.storage.removeAudio(audio);
           })
         )
@@ -107,7 +109,9 @@ export class AudioListStoreService
     pipe(
       tap((download: Download) =>
         this.updateDownloads(
-          this.downloads().filter((d) => d.url !== download.url)
+          this.downloads().filter(
+            (download: Download) => download.url !== download.url
+          )
         )
       )
     )
@@ -117,13 +121,15 @@ export class AudioListStoreService
     pipe(
       tap((info: AudioInfo) =>
         this.updateDownloads(
-          this.downloads().map((d) => (d.url === info.url ? { ...d, info } : d))
+          this.downloads().map((download: Download) =>
+            download.url === info.url ? { ...download, info } : download
+          )
         )
       )
     )
   );
 
-  private readonly getAudios = this.effect<void>(
+  private readonly loadAudios = this.effect<void>(
     pipe(
       switchMap(() => defer(() => this.storage.getAudios())),
       tap((audios: Audio[]) => this.updateAudios(audios))
@@ -144,7 +150,7 @@ export class AudioListStoreService
   }
 
   ngrxOnStateInit(): void {
-    this.getAudios();
+    this.loadAudios();
   }
 
   private downloadAudio(url: string): Observable<[AudioInfo, ArrayBuffer]> {
