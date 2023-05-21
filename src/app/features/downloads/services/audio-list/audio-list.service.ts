@@ -30,7 +30,7 @@ import {
 @Injectable({
   providedIn: 'root',
 })
-export class DownloadsService {
+export class AudioListService {
   private readonly ytdlp: YtdlpService = inject(YtdlpService);
   private readonly filesystem: FilesystemService = inject(FilesystemService);
   private readonly storage: StorageService = inject(StorageService);

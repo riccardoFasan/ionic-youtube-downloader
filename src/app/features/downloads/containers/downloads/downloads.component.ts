@@ -6,15 +6,13 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';
-import { provideComponentStore } from '@ngrx/component-store';
-import { AudioListStoreService } from '../../store';
 import {
   AudioComponent,
   DownloadingAudioComponent,
   SearchComponent,
 } from '../../presentation';
 import { Audio, Download } from 'src/app/core/models';
-import { DownloadsService } from '../../services';
+import { AudioListService } from '../../services';
 
 @Component({
   selector: 'app-downloads',
@@ -66,12 +64,10 @@ import { DownloadsService } from '../../services';
     </ion-content>
   `,
   styles: [],
-  providers: [provideComponentStore(AudioListStoreService)],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DownloadsComponent {
-  // private readonly store: AudioListStoreService = inject(AudioListStoreService);
-  private readonly downloader: DownloadsService = inject(DownloadsService);
+  private readonly downloader: AudioListService = inject(AudioListService);
 
   protected readonly downloads: Signal<Download[]> = this.downloader.downloads;
   protected readonly audios: Signal<Audio[]> = this.downloader.audios;
