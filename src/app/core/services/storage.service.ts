@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Audio } from '../../models';
+import { Audio } from '../models';
 import { Preferences } from '@capacitor/preferences';
 
 @Injectable({

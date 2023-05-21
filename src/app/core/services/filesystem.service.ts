@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Directory, Filesystem } from '@capacitor/filesystem';
-import { Audio, AudioInfo } from '../../models';
+import { Audio, AudioInfo } from '../models';
 import { FileOpener } from '@capacitor-community/file-opener';
 
 @Injectable({

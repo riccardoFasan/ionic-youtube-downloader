@@ -1,3 +1,3 @@
-export * from './search/search.component';
-export * from './downloading-audio/downloading-audio.component';
-export * from './audio/audio.component';
+export * from './search.component';
+export * from './downloading-audio.component';
+export * from './audio.component';

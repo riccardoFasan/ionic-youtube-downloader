@@ -1,1 +1,1 @@
-export * from './downloads/downloads.component';
+export * from './downloads.component';
