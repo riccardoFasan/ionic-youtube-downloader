@@ -7,7 +7,7 @@ import { AlertController } from '@ionic/angular';
 export class AskerService {
   private readonly alertController: AlertController = inject(AlertController);
 
-  async shouldRemove(): Promise<boolean> {
+  async askToRemoveFile(): Promise<boolean> {
     const { role } = await this.presentRemoveConfimAlert();
     return role === 'destructive';
   }

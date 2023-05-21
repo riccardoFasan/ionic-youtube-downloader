@@ -10,13 +10,17 @@ export class StorageService {
 
   async addAudio(audio: Audio): Promise<void> {
     const audios: Audio[] = [...(await this.getAudios()), audio];
-    Preferences.set({ key: this.audiosKey, value: JSON.stringify(audios) });
+    await this.setAudios(audios);
   }
 
   async removeAudio(audio: Audio): Promise<void> {
     const audios: Audio[] = (await this.getAudios()).filter(
       (a: Audio) => a.url !== audio.url
     );
+    await this.setAudios(audios);
+  }
+
+  async setAudios(audios: Audio[]): Promise<void> {
     Preferences.set({ key: this.audiosKey, value: JSON.stringify(audios) });
   }
 
