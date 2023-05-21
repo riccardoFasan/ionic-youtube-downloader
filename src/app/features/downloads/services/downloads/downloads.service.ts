@@ -6,6 +6,7 @@ import {
   effect,
   EffectRef,
   computed,
+  WritableSignal,
 } from '@angular/core';
 import {
   Observable,
@@ -36,8 +37,8 @@ export class DownloadsService {
   private readonly messager: MessagerService = inject(MessagerService);
   private readonly asker: AskerService = inject(AskerService);
 
-  readonly downloads: Signal<Download[]> = signal<Audio[]>([]);
-  readonly audios: Signal<Audio[]> = signal<Audio[]>([]);
+  readonly downloads: WritableSignal<Download[]> = signal<Audio[]>([]);
+  readonly audios: WritableSignal<Audio[]> = signal<Audio[]>([]);
   readonly hasDownloads: Signal<boolean> = computed<boolean>(
     () => this.downloads().length > 0
   );
@@ -93,17 +94,14 @@ export class DownloadsService {
     this.audios.set(audios);
   }
 
-  private updateDownloads(downloads: Download[]): void {
-    this.downloads.set(downloads);
-  }
-
   private addDownload(download: Download): void {
     this.downloads.update((downloads: Download[]) => [...downloads, download]);
   }
 
   private removeDownload(download: Download): void {
+    const url: string = download.url;
     this.downloads.update((downloads: Download[]) =>
-      downloads.filter((download: Download) => download.url !== download.url)
+      downloads.filter((download: Download) => download.url !== url)
     );
   }
 
