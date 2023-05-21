@@ -11,9 +11,9 @@ import {
   AudioComponent,
   DownloadingAudioComponent,
   SearchComponent,
-} from '../../presentation';
+} from '../presentation';
 import { Audio, Download } from 'src/app/core/models';
-import { AudioListService } from '../../services';
+import { AudioListService } from '../services';
 
 @Component({
   selector: 'app-downloads',

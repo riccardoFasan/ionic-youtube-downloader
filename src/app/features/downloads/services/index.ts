@@ -1,1 +1,1 @@
-export * from './audio-list/audio-list.service';
+export * from './audio-list.service';
