@@ -3,6 +3,7 @@ import {
   Component,
   inject,
   Signal,
+  OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IonicModule } from '@ionic/angular';

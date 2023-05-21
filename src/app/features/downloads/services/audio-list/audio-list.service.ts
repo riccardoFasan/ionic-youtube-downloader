@@ -37,36 +37,94 @@ export class AudioListService {
   private readonly messager: MessagerService = inject(MessagerService);
   private readonly asker: AskerService = inject(AskerService);
 
-  readonly downloads: WritableSignal<Download[]> = signal<Audio[]>([]);
-  readonly audios: WritableSignal<Audio[]> = signal<Audio[]>([]);
+  private readonly downloadsStore: WritableSignal<Download[]> = signal<Audio[]>(
+    []
+  );
+  private readonly audiosStore: WritableSignal<Audio[]> = signal<Audio[]>([]);
+
+  readonly downloads: Signal<Download[]> = this.downloadsStore.asReadonly();
+  readonly audios: Signal<Audio[]> = this.audiosStore.asReadonly();
+
   readonly hasDownloads: Signal<boolean> = computed<boolean>(
-    () => this.downloads().length > 0
+    () => this.downloadsStore().length > 0
   );
   readonly hasAudios: Signal<boolean> = computed<boolean>(
-    () => this.audios().length > 0
+    () => this.audiosStore().length > 0
   );
 
-  private readonly syncStorage: EffectRef = effect(() => {
-    this.storage.setAudios(this.audios());
-  });
+  private readonly laod: EffectRef = effect(() => this.loadAudios());
 
-  constructor() {
-    this.loadAudios();
-    this.syncStorage;
-  }
+  private readonly sync: EffectRef = effect(() =>
+    this.storage.setAudios(this.audiosStore())
+  );
 
   async download(url: string): Promise<void> {
-    const downloading: boolean = this.downloads().some(
-      (download: Download) => download.url === url
-    );
-    if (downloading) {
+    if (this.isDuplicated(url)) {
       this.messager.duplicateWarning();
       return;
     }
+    await lastValueFrom(this.downloadAndSave(url));
+  }
 
+  async askToRemoveAudio(audio: Audio): Promise<void> {
+    const canRemove: boolean = await this.asker.askToRemoveFile();
+    if (canRemove) this.removeAudio(audio);
+  }
+
+  private updateAudios(audios: Audio[]): void {
+    this.audiosStore.set(audios);
+  }
+
+  private addDownload(download: Download): void {
+    this.downloadsStore.update((downloads: Download[]) => [
+      ...downloads,
+      download,
+    ]);
+  }
+
+  private removeDownload(download: Download): void {
+    const url: string = download.url;
+    this.downloadsStore.update((downloads: Download[]) =>
+      downloads.filter((download: Download) => download.url !== url)
+    );
+  }
+
+  private setDownloadAudioInfo(info: AudioInfo): void {
+    this.downloadsStore.update((downloads: Download[]) =>
+      downloads.map((download: Download) =>
+        download.url === info.url ? { ...download, info } : download
+      )
+    );
+  }
+
+  private async loadAudios(): Promise<void> {
+    const audios: Audio[] = await this.storage.getAudios();
+    this.updateAudios(audios);
+  }
+
+  private addAudio(audio: Audio): void {
+    this.audiosStore.update((audios: Audio[]) => [...audios, audio]);
+  }
+
+  private removeAudio(audio: Audio): void {
+    this.audiosStore.update((audios: Audio[]) =>
+      audios.filter((a: Audio) => a.url !== audio.url)
+    );
+  }
+
+  private isDuplicated(url: string): boolean {
+    const downloading: boolean = this.downloadsStore().some(
+      (download: Download) => download.url === url
+    );
+    const downloaded: boolean = this.audiosStore().some(
+      (audio: Audio) => audio.url === url
+    );
+    return downloading || downloaded;
+  }
+
+  private downloadAndSave(url: string): Observable<Audio> {
     this.addDownload({ url });
-
-    const download$: Observable<Audio> = this.downloadAudio(url).pipe(
+    return this.downloadAudio(url).pipe(
       switchMap(([info, arrayBuffer]: [AudioInfo, ArrayBuffer]) =>
         this.saveAudio(info, arrayBuffer)
       ),
@@ -80,51 +138,6 @@ export class AudioListService {
           this.removeDownload({ url });
         },
       })
-    );
-
-    await lastValueFrom(download$);
-  }
-
-  async askToRemoveAudio(audio: Audio): Promise<void> {
-    const canRemove: boolean = await this.asker.askToRemoveFile();
-    if (canRemove) this.removeAudio(audio);
-  }
-
-  private updateAudios(audios: Audio[]): void {
-    this.audios.set(audios);
-  }
-
-  private addDownload(download: Download): void {
-    this.downloads.update((downloads: Download[]) => [...downloads, download]);
-  }
-
-  private removeDownload(download: Download): void {
-    const url: string = download.url;
-    this.downloads.update((downloads: Download[]) =>
-      downloads.filter((download: Download) => download.url !== url)
-    );
-  }
-
-  private setDownloadAudioInfo(info: AudioInfo): void {
-    this.downloads.update((downloads: Download[]) =>
-      downloads.map((download: Download) =>
-        download.url === info.url ? { ...download, info } : download
-      )
-    );
-  }
-
-  private async loadAudios(): Promise<void> {
-    const audios: Audio[] = await this.storage.getAudios();
-    this.updateAudios(audios);
-  }
-
-  private addAudio(audio: Audio): void {
-    this.audios.update((audios: Audio[]) => [...audios, audio]);
-  }
-
-  private removeAudio(audio: Audio): void {
-    this.audios.update((audios: Audio[]) =>
-      audios.filter((a: Audio) => a.url !== audio.url)
     );
   }
 
